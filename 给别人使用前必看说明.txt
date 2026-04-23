@@ -1,0 +1,494 @@
+Suno 批量下载工具 - 给别人使用前必看说明
+更新时间：2026-04-23
+
+一、这个工具是做什么的
+
+这个工具是一个本地运行的 Suno 批量下载辅助工具。
+
+它会打开一个可被程序控制的浏览器窗口，在 Suno 页面里给歌曲卡片加复选框。
+用户勾选歌曲后，工具会自动逐首打开歌曲菜单：
+
+更多菜单 -> Download -> MP3 Audio
+
+然后把 MP3 保存到用户选择的下载文件夹。
+
+注意：
+1. 工具不破解 Suno。
+2. 工具不绕过账号权限。
+3. 必须使用用户自己的 Suno 账号登录。
+4. 页面上原本能手动下载的歌曲，工具才能自动下载。
+
+
+二、对方电脑需要安装什么
+
+必须安装：
+
+1. macOS
+   当前版本主要按 macOS 做的。
+   Windows 不能直接用，因为启动脚本和 360 浏览器启动方式用了 macOS 命令。
+
+2. Node.js
+   建议安装 LTS 版本。
+   安装后终端里需要能运行：
+
+   node -v
+   npm -v
+
+3. npm 依赖
+   对方拿到整个项目文件夹后，第一次需要在项目目录执行：
+
+   npm install
+
+   这个命令会安装 package.json 里的依赖。
+
+4. 浏览器
+   推荐使用：
+
+   360 极速浏览器 Pro
+
+   当前代码默认认为 360 的路径是：
+
+   /Applications/360Chrome.app
+
+   也可以使用 Google Chrome，但之前测试主要围绕 360 极速浏览器 Pro。
+
+5. Suno 账号
+   对方需要能正常登录 Suno，并且账号有下载权限。
+
+
+三、项目依赖在哪里看
+
+文件：
+
+package.json
+
+关键行：
+
+第 7-10 行：npm 脚本
+第 8 行：start 启动命令
+第 9 行：check 语法检查命令
+第 11-14 行：依赖列表
+第 12 行：electron
+第 13 行：playwright
+
+当前依赖是：
+
+electron: ^37.4.0
+playwright: ^1.54.2
+
+第一次安装依赖：
+
+npm install
+
+检查代码有没有语法问题：
+
+npm run check
+
+启动程序：
+
+npm start
+
+
+四、对方第一次使用步骤
+
+1. 把整个项目文件夹发给对方。
+
+   建议整个文件夹一起发，不要只发 src。
+   至少要包含：
+
+   package.json
+   package-lock.json
+   启动.command
+   README.md
+   src/
+
+2. 对方打开终端，进入项目目录。
+
+   例如：
+
+   cd "/Users/xxx/Desktop/zidong"
+
+3. 安装依赖：
+
+   npm install
+
+4. 如果 macOS 提示启动脚本没有权限，执行：
+
+   chmod +x 启动.command
+
+5. 启动程序：
+
+   双击 启动.command
+
+   或者终端执行：
+
+   npm start
+
+
+五、启动脚本在哪里
+
+文件：
+
+启动.command
+
+关键行：
+
+第 1 行：使用 zsh
+第 2 行：自动进入当前脚本所在文件夹
+第 3 行：执行 npm start
+
+内容是：
+
+#!/bin/zsh
+cd "$(dirname "$0")" || exit 1
+npm start
+
+这个脚本放在项目文件夹里后，不管项目文件夹移动到哪里，双击它都会先进入项目目录，再启动程序。
+
+
+六、对方需要改哪些路径
+
+大多数 macOS 用户不需要改代码。
+
+但是下面这些路径可能和对方电脑不同。
+
+
+1. 360 极速浏览器 Pro 路径
+
+文件：
+
+src/automation/sunoController.js
+
+关键行：
+
+第 60-68 行：用 macOS open 命令启动 360 浏览器
+第 63 行：360 浏览器 App 路径
+
+当前写死的是：
+
+'/Applications/360Chrome.app'
+
+如果对方电脑上的 360 不在这个位置，需要改第 63 行。
+
+例如对方的 360 路径如果是：
+
+/Applications/360极速浏览器.app
+
+就把第 63 行改成：
+
+'/Applications/360极速浏览器.app'
+
+注意：这里是 .app 路径，不是里面的 Contents/MacOS 可执行文件路径。
+
+
+2. 远程调试端口
+
+文件：
+
+src/main.js
+
+关键行：
+
+第 14-21 行：默认设置
+第 20 行：默认调试地址
+
+当前是：
+
+browserCdpUrl: 'http://127.0.0.1:9222'
+
+一般不需要改。
+
+如果对方电脑 9222 端口被占用，可以改成：
+
+browserCdpUrl: 'http://127.0.0.1:9333'
+
+同时要注意，src/automation/sunoController.js 第 53-55 行会读取这个地址里的端口。
+
+
+3. 360 专用用户数据目录
+
+文件：
+
+src/automation/sunoController.js
+
+关键行：
+
+第 56-57 行：360 专用 profile 目录
+
+当前逻辑是：
+
+const profileDir = settings.browserProfileDir
+  || path.join(this.appDataDir, 'suno-360-profile');
+
+这表示默认 profile 会放在 Electron 的用户数据目录里，名字是：
+
+suno-360-profile
+
+一般不需要改。
+
+如果对方想固定用某个目录，可以在界面里设置 browserProfileDir，或者改第 56-57 行。
+
+
+4. 初始打开的 Suno 页面
+
+文件：
+
+src/main.js
+
+关键行：
+
+第 16 行：
+
+lastUrl: 'https://suno.com/',
+
+文件：
+
+src/automation/sunoController.js
+
+关键行：
+
+第 124-127 行：启动后跳转到 lastUrl 或 Suno 首页
+
+当前逻辑是：
+
+await this.page.goto(lastUrl || 'https://suno.com/', { waitUntil: 'domcontentloaded' });
+
+如果希望默认打开创建页，可以把 src/main.js 第 16 行改成：
+
+lastUrl: 'https://suno.com/create',
+
+不过工具会保存上次访问地址，所以不是必须改。
+
+
+七、浏览器模式说明
+
+工具界面里的浏览器选择大概有这些模式：
+
+1. 内置浏览器
+   使用 Playwright 自带 Chromium。
+   对登录 Suno 可能不稳定，不是最推荐。
+
+2. 本机 Chrome
+   使用 Google Chrome。
+   如果对方安装了 Chrome，可以试。
+
+3. 360 极速浏览器 Pro
+   推荐模式。
+   代码会通过 macOS 的 open 命令启动 360，并加上远程调试端口。
+
+   相关代码：
+
+   src/automation/sunoController.js
+   第 52-75 行：launch360Chrome
+
+4. 指定程序
+   用户在界面里选择某个浏览器 App。
+   相关代码：
+
+   src/automation/sunoController.js
+   第 90-109 行：launchPersistentBrowser
+
+5. 连接已打开浏览器
+   浏览器必须已经用远程调试端口启动。
+   普通方式打开的浏览器不能被工具接管。
+
+
+八、360 极速浏览器 Pro 正确使用流程
+
+1. 先完全退出当前所有 360 浏览器窗口。
+
+   最好在 360 里按：
+
+   Cmd + Q
+
+   不要只是关窗口。
+
+2. 启动工具。
+
+3. 浏览器选择：
+
+   360 极速浏览器 Pro
+
+4. 点击：
+
+   启动 / 打开浏览器
+
+5. 工具会打开一个新的 360 浏览器实例。
+
+6. 在这个 360 里登录 Suno。
+
+7. 打开：
+
+   https://suno.com/create
+
+8. 等歌曲列表加载出来。
+
+9. 回到工具点击：
+
+   刷新复选框
+
+10. Suno 页面里歌曲卡片左上角会出现复选框。
+
+11. 勾选要下载的歌曲。
+
+12. 工具里选择下载目录。
+
+13. 点击：
+
+   开始下载
+
+
+九、为什么要先退出 360
+
+因为普通打开的 360 没有远程调试端口，工具不能接管。
+
+必须让工具用这组参数启动 360：
+
+--remote-debugging-port=9222
+--user-data-dir=某个专用目录
+
+对应代码：
+
+src/automation/sunoController.js
+第 60-68 行
+
+如果 360 已经以普通模式在后台运行，macOS 可能会复用旧进程，导致新参数不生效。
+所以使用前最好先 Cmd + Q 完全退出 360。
+
+
+十、常见问题
+
+问题 1：双击 启动.command 没反应
+
+解决：
+
+1. 打开终端进入项目目录。
+2. 执行：
+
+   chmod +x 启动.command
+
+3. 再双击。
+
+如果 macOS 提示不安全，右键 启动.command，选择“打开”。
+
+
+问题 2：提示 npm command not found
+
+说明对方没有安装 Node.js，或者 npm 没进 PATH。
+
+解决：
+
+安装 Node.js LTS。
+
+安装后检查：
+
+node -v
+npm -v
+
+
+问题 3：提示 Cannot find module
+
+说明没有安装依赖。
+
+解决：
+
+进入项目目录执行：
+
+npm install
+
+
+问题 4：打开了 360，但页面没有复选框
+
+解决：
+
+1. 确认 360 是工具打开的，不是用户自己普通打开的。
+2. 确认进入了 Suno 页面。
+3. 点击工具里的“刷新复选框”。
+4. 如果仍然没有，先 Cmd + Q 退出 360，再重新从工具启动。
+
+
+问题 5：只能识别十几首
+
+这是 Suno 页面虚拟列表机制。
+Suno 不会一次把所有歌曲都放在 DOM 里，只渲染当前可视区域附近的歌曲。
+
+解决：
+
+1. 当前区域勾选并下载。
+2. 往下滚动。
+3. 点击“刷新复选框”。
+4. 继续勾选下一批。
+
+工具已经做了状态记忆：
+
+已勾选的歌曲滚回来会恢复勾选。
+已下载的歌曲会显示“已下载”。
+
+
+问题 6：下载失败，提示找不到 MP3 Audio
+
+可能原因：
+
+1. Suno 页面菜单没展开。
+2. 网络卡顿。
+3. Suno 改了菜单结构。
+
+解决：
+
+1. 手动确认歌曲菜单里有：
+
+   Download -> MP3 Audio
+
+2. 工具里点击“重试当前项”。
+3. 如果还失败，刷新 Suno 页面，再点“刷新复选框”。
+
+
+十一、如果对方是 Windows，需要改什么
+
+当前版本不是 Windows 版。
+
+如果要支持 Windows，需要改：
+
+1. 启动脚本
+
+   当前文件：
+
+   启动.command
+
+   这是 macOS 脚本。
+   Windows 需要新建 .bat，例如：
+
+   cd /d "%~dp0"
+   npm start
+
+2. 360 浏览器启动方式
+
+   当前代码：
+
+   src/automation/sunoController.js
+   第 60-68 行
+
+   里面用了 macOS 的 open 命令：
+
+   spawn('open', ...)
+
+   Windows 不能用 open。
+   需要改成直接启动 Windows 的浏览器 exe，例如：
+
+   C:\Users\xxx\AppData\Local\360Chrome\Chrome\Application\360chrome.exe
+
+3. 360 浏览器路径
+
+   当前 macOS 路径：
+
+   /Applications/360Chrome.app
+
+   Windows 必须换成 exe 路径。
+
+
+十二、最推荐发给对方的话
+
+可以直接复制下面这段给对方：
+
+这个是本地 Suno 批量下载工具。你需要先安装 Node.js，然后在项目文件夹里执行一次 npm install。以后双击“启动.command”就能打开工具。浏览器建议选择“360 极速浏览器 Pro”。使用前先把普通打开的 360 全部 Cmd+Q 退出，再从工具里点“启动 / 打开浏览器”。在弹出的 360 里登录 Suno，进入 https://suno.com/create，点工具里的“刷新复选框”，勾选歌曲，选择下载目录，然后开始下载。歌曲很多时需要滚动页面后再刷新复选框分批下载。
+

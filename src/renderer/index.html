@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Suno 批量下载工具</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="hero">
+        <p class="eyebrow">Suno Browser Automation</p>
+        <h1>批量下载，不打乱你的歌单顺序。</h1>
+        <p class="intro">在专用浏览器里勾选歌曲，工具会按页面从上到下串行触发下载，并在失败时暂停等待你接管。</p>
+      </section>
+
+      <section class="panel">
+        <div class="browser-settings">
+          <label class="field">
+            <span>浏览器</span>
+            <select id="browserMode">
+              <option value="default">内置浏览器</option>
+              <option value="chrome">本机 Chrome</option>
+              <option value="360chrome">360 极速浏览器 Pro</option>
+              <option value="executable">指定程序</option>
+              <option value="cdp">连接已打开浏览器</option>
+            </select>
+          </label>
+
+          <div id="browserExecutableRow" class="field hidden">
+            <span>程序路径</span>
+            <div class="input-action">
+              <input id="browserExecutablePath" type="text" placeholder="/Applications/Google Chrome.app" />
+              <button id="chooseBrowserExecutable">选择</button>
+            </div>
+          </div>
+
+          <label id="browserCdpRow" class="field hidden">
+            <span>调试地址</span>
+            <input id="browserCdpUrl" type="text" placeholder="http://127.0.0.1:9222" />
+          </label>
+        </div>
+
+        <div class="button-grid">
+          <button id="launchBrowser" class="primary">启动 / 打开浏览器</button>
+          <button id="chooseDir">选择下载目录</button>
+          <button id="injectCheckboxes">刷新复选框</button>
+          <button id="startDownload" class="accent">开始下载</button>
+        </div>
+        <div class="dir-row">
+          <span>下载目录</span>
+          <strong id="downloadDir">未选择</strong>
+        </div>
+      </section>
+
+      <section class="panel progress-panel">
+        <div class="progress-head">
+          <div>
+            <p class="label">当前状态</p>
+            <h2 id="statusText">等待启动</h2>
+          </div>
+          <div class="counter">
+            <span id="progressText">0 / 0</span>
+          </div>
+        </div>
+
+        <div class="bar">
+          <div id="progressBar"></div>
+        </div>
+
+        <dl class="stats">
+          <div>
+            <dt>正在处理</dt>
+            <dd id="currentTrack">-</dd>
+          </div>
+          <div>
+            <dt>最近成功</dt>
+            <dd id="lastSuccess">-</dd>
+          </div>
+          <div>
+            <dt>累计成功</dt>
+            <dd id="successCount">0</dd>
+          </div>
+        </dl>
+      </section>
+
+      <section id="failurePanel" class="panel failure hidden">
+        <p class="label">失败项已暂停</p>
+        <h2 id="failedTrack">-</h2>
+        <p id="failedReason">等待人工处理。</p>
+        <div class="button-grid">
+          <button id="retryCurrent" class="primary">重试当前项</button>
+          <button id="skipCurrent">跳过当前项</button>
+          <button id="stopAll" class="danger">停止全部</button>
+        </div>
+      </section>
+
+      <section class="panel log-panel">
+        <p class="label">事件日志</p>
+        <ol id="log"></ol>
+      </section>
+    </main>
+
+    <script src="./renderer.js"></script>
+  </body>
+</html>

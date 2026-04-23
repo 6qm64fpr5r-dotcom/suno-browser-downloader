@@ -1,0 +1,16 @@
+{
+  "name": "suno-browser-downloader",
+  "version": "0.1.0",
+  "description": "Local Electron + Playwright tool for selecting and downloading Suno songs in a dedicated browser window.",
+  "main": "src/main.js",
+  "private": true,
+  "scripts": {
+    "start": "env -u ELECTRON_RUN_AS_NODE -u ELECTRON_FORCE_IS_PACKAGED electron .",
+    "check": "node --check src/main.js && node --check src/preload.js && node --check src/automation/sunoController.js && node --check src/renderer/renderer.js"
+  },
+  "dependencies": {
+    "electron": "^37.4.0",
+    "playwright": "^1.54.2"
+  },
+  "devDependencies": {}
+}

@@ -42,6 +42,47 @@ function sendStatus(payload) {
     return;
   }
   mainWindow.webContents.send('status:update', payload);
+
+  if (payload?.type === 'failed') {
+    showDownloadFailureDialog(payload).catch((error) => {
+      console.error('Failed to show download failure dialog:', error);
+    });
+  }
+}
+
+async function showDownloadFailureDialog(payload) {
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    return;
+  }
+
+  if (mainWindow.isMinimized()) {
+    mainWindow.restore();
+  }
+  mainWindow.show();
+  mainWindow.focus();
+
+  const trackLabel = formatTrackLabel(payload.track);
+  const reason = payload.track?.error || '自动化步骤异常。';
+
+  await dialog.showMessageBox(mainWindow, {
+    type: 'error',
+    title: '下载失败',
+    message: '下载失败，队列已暂停',
+    detail: `${trackLabel}\n失败原因：${reason}\n\n请在工具窗口选择“重试当前项”、“跳过当前项”或“停止全部”。`,
+    buttons: ['知道了'],
+    defaultId: 0,
+    noLink: true,
+  });
+}
+
+function formatTrackLabel(track) {
+  if (!track) {
+    return '失败歌曲：未知';
+  }
+
+  const order = track.order ? `第 ${track.order} 首` : '当前歌曲';
+  const title = track.title || '未命名歌曲';
+  return `失败歌曲：${order} · ${title}`;
 }
 
 async function createWindow() {

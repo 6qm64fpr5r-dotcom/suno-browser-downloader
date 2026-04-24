@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const { spawn } = require('node:child_process');
 const { chromium } = require('playwright');
 
-const DOWNLOAD_TIMEOUT_MS = 20000;
+const DOWNLOAD_TIMEOUT_MS = 40000;
 const MENU_TIMEOUT_MS = 5000;
 const BROWSER_CONNECT_TIMEOUT_MS = 15000;
 
@@ -26,6 +26,7 @@ class SunoController {
     this.lastSuccess = '';
     this.failedTrack = null;
     this.reservedNames = new Set();
+    this.downloadHistory = this.loadDownloadHistory();
   }
 
   async launch() {
@@ -141,6 +142,7 @@ class SunoController {
   async injectCheckboxes() {
     await this.ensurePage();
     await this.focusSunoPage();
+    await this.syncDownloadHistoryToPage();
     const result = await this.page.evaluate(injectSelectionUi);
     this.emitIdle(`已刷新复选框，识别到 ${result.count} 个候选歌曲卡片。`);
     return result;
@@ -149,6 +151,7 @@ class SunoController {
   async safeInjectCheckboxes() {
     try {
       await this.page.waitForLoadState('domcontentloaded', { timeout: 8000 });
+      await this.syncDownloadHistoryToPage();
       await this.page.evaluate(injectSelectionUi);
     } catch {
       // Navigation can race with injection. The user can manually refresh injection from the GUI.
@@ -158,6 +161,7 @@ class SunoController {
   async startQueue() {
     await this.ensurePage();
     await this.focusSunoPage();
+    await this.syncDownloadHistoryToPage();
     const { downloadDir } = this.getSettings();
     if (!downloadDir) {
       throw new Error('请先选择下载目录。');
@@ -319,8 +323,52 @@ class SunoController {
     const download = await downloadPromise;
     const savePath = this.nextAvailablePath(track.title, download.suggestedFilename());
     await download.saveAs(savePath);
+    this.recordDownloadedTrack(track, savePath);
     await this.markTrackDownloaded(track);
     return savePath;
+  }
+
+  loadDownloadHistory() {
+    try {
+      return JSON.parse(fs.readFileSync(this.downloadHistoryPath(), 'utf8'));
+    } catch {
+      return {};
+    }
+  }
+
+  saveDownloadHistory() {
+    fs.mkdirSync(this.appDataDir, { recursive: true });
+    fs.writeFileSync(this.downloadHistoryPath(), JSON.stringify(this.downloadHistory, null, 2));
+  }
+
+  downloadHistoryPath() {
+    return path.join(this.appDataDir, 'download-history.json');
+  }
+
+  recordDownloadedTrack(track, savePath) {
+    const key = track.key || track.id;
+    if (!key) {
+      return;
+    }
+    this.downloadHistory[key] = {
+      key,
+      title: track.title || '',
+      savedAs: savePath,
+      downloadedAt: new Date().toISOString(),
+    };
+    this.saveDownloadHistory();
+  }
+
+  async syncDownloadHistoryToPage() {
+    if (!this.page || this.page.isClosed()) {
+      return;
+    }
+    await this.page.evaluate((downloadHistory) => {
+      window.__sunoDlDownloadedKeys = {
+        ...(window.__sunoDlDownloadedKeys || {}),
+        ...Object.fromEntries(Object.keys(downloadHistory || {}).map((key) => [key, true])),
+      };
+    }, this.downloadHistory).catch(() => {});
   }
 
   async markTrackDownloaded(track) {
@@ -792,7 +840,7 @@ function injectSelectionUi() {
     document.body.appendChild(status);
   }
   status.textContent = cards.length
-    ? `Suno 批量工具：已识别 ${cards.length} 首，勾选左上角复选框后回工具开始。`
+    ? `Suno 批量工具：已识别 ${cards.length} 首，历史已下载 ${Object.keys(window.__sunoDlDownloadedKeys || {}).length} 首。`
     : 'Suno 下载工具：当前页未识别到可下载歌曲，请生成完成后点工具里的刷新复选框。';
 
   let toolbar = document.getElementById(TOOLBAR_ID);
